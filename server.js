@@ -16,6 +16,7 @@ const io = require("socket.io")(server, {
   },
 });
 
+// app.use(cors());
 
 const PORT = process.env.PORT || 3001;
 
@@ -38,6 +39,7 @@ io.on("connection", (socket) => {
 
     socket.join(roomId);
     socket.to(roomId).emit("user-joined", peerID, userInfo);
+    // socket.to(roomID).emit("on-screen-sharing", false);
     io.in(roomId).emit("list-of-users", userListByRoomID[roomId]);
     io.in(roomId).emit("list-of-messages", messagesByRoomID[roomId]);
 
@@ -55,6 +57,10 @@ io.on("connection", (socket) => {
       console.log("onNewMessage", newMessageObj);
       messagesByRoomID[roomId].push(newMessageObj);
       io.in(roomId).emit("list-of-messages", messagesByRoomID[roomId]);
+    });
+
+    socket.on("on-screen-sharing", (roomID, status) => {
+      socket.to(roomID).emit("on-screen-sharing", status);
     });
   });
 });

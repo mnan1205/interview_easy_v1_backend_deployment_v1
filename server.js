@@ -4,6 +4,8 @@ const cors = require("cors");
 const { ExpressPeerServer } = require("peer");
 const peerServer = ExpressPeerServer(server, {
   debug: true,
+  expire_timeout: 600000,
+  alive_timeout: 600000
 });
 
 app.use(cors());

@@ -67,7 +67,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
 });
 
 app.get("/resume/:userID", (req, res) => {
-  const userID = req.params["userID"];
+  const userID = req.param("userID");
   console.log(userID);
   const filename = `uploads/${userID}/Resume.pdf`;
   retrieveFile(filename, res);

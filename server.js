@@ -67,7 +67,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
 });
 
 app.get("/resume/:userID", (req, res) => {
-  const userID = req.param("userID");
+  const userID = req.params["userID"];
   console.log(userID);
   const filename = `uploads/${userID}/Resume.pdf`;
   retrieveFile(filename, res);
@@ -114,45 +114,6 @@ function retrieveFile(filename, res) {
     }
   });
 }
-// app.post("/upload", (req, res) => {
-//   let form = new formidable.IncomingForm({
-//     uploadDir: path.join(__dirname, config.default.vault),
-//     keepExtensions: true,
-//   });
-
-//   const userID = req.header("user-id");
-
-//   form.parse(req, function (error, fields, file) {
-//     let filepath = file.file.filepath;
-//     let dir = path.join(__dirname, config.default.vault, userID);
-//     let newpath = path.join(dir, "Resume");
-
-//     if (!fs.existsSync(dir)) {
-//       fs.mkdirSync(dir, { recursive: true });
-//     }
-
-//     fs.rename(filepath, newpath, function () {
-//       res.write("File Upload Success!");
-//       res.end();
-//     });
-//   });
-// });
-
-// app.get("/resume/:userID", (req, res) => {
-//   let filePath = path.join(
-//     __dirname,
-//     config.default.vault,
-//     req.param("userID"),
-//     "Resume"
-//   );
-
-//   var file = fs.createReadStream(filePath);
-//   var stat = fs.statSync(filePath);
-//   res.setHeader("Content-Length", stat.size);
-//   res.setHeader("Content-Type", "application/pdf");
-//   res.setHeader("Content-Disposition", "attachment; filename=Resume.pdf");
-//   file.pipe(res);
-// });
 
 const exportAll = (userListByRoomID, messages) => {
   let interviewer = {};
@@ -166,28 +127,29 @@ const exportAll = (userListByRoomID, messages) => {
   const sender = nodemailer.createTransport({
     host: "smtp.office365.com",
     port: "587",
-    secure: false,
+    // secure: true,
+    secureConnection: false,
     auth: {
       user: "intervieweazy@outlook.com",
       pass: "JustF0rFun",
     },
+    tls: {
+        ciphers:'SSLv3'
+    }
   });
-  const s3ResumeURL = `https://s3://interview-easy/uploads/${interviewee.uid}/Resume.pdf`;
-
-  // const resumeAttachment = {
-  //   filename: "Resume.pdf",
-  //   path: path.join(__dirname, config.default.vault, interviewee.uid, "Resume"),
-  // };
+  const s3Url = `https://interview-easy.s3.amazonaws.com/uploads/${interviewee.uid}/Resume.pdf`;
+  console.log(s3Url);
+  //path.join(__dirname, config.default.vault, interviewee.uid, "Resume")
   const resumeAttachment = {
     filename: "Resume.pdf",
-    path: s3ResumeURL,
+    path: s3Url,
   };
 
   let messageContent = "";
 
-  messages.forEach((messageObj) => {
+  messages?.forEach((messageObj) => {
     messageContent += `${messageObj.userName}: ${messageObj.message}
-  `;
+    `;
   });
 
   const chatAttachment = {
@@ -198,7 +160,7 @@ const exportAll = (userListByRoomID, messages) => {
   var mail = {
     from: "intervieweazy@outlook.com",
     to: interviewer.email,
-    subject: `Interview with ${interviewee.userName} `,
+    subject: `Interview with ${interviewee.userName}`,
     attachments: [resumeAttachment, chatAttachment],
     text: "Attached the details of the interview",
   };
@@ -223,7 +185,7 @@ io.on("connection", (socket) => {
       userListByRoomID[roomId] = {};
     }
 
-    userListByRoomID[roomId][`${userInfo.userName}${userInfo.email} `] =
+    userListByRoomID[roomId][`${userInfo.userName}${userInfo.email}`] =
       userInfo;
 
     socket.join(roomId);
@@ -235,7 +197,7 @@ io.on("connection", (socket) => {
       socket.to(roomId).emit("user-disconnected", userInfo);
       socket.to(roomId).emit("on-screen-sharing", false);
       exportAll(userListByRoomID[roomId], messagesByRoomID[roomId]);
-      delete userListByRoomID[roomId][`${userInfo.userName}${userInfo.email} `];
+      delete userListByRoomID[roomId][`${userInfo.userName}${userInfo.email}`];
       io.in(roomId).emit("list-of-users", userListByRoomID[roomId]);
     });
 
@@ -258,4 +220,4 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(PORT, () => console.log(`Server listening on port: ${PORT} `));
+server.listen(PORT, () => console.log(`Server listening on port: ${PORT}`));

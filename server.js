@@ -73,6 +73,17 @@ app.get("/resume/:userID", (req, res) => {
   retrieveFile(filename, res);
 });
 
+let feedBackByRoomID = {};
+
+app.post("/updateFeedback", (req, res) => {
+  const userID = req.header("user-id");
+  if (!feedBackByRoomID[req.body.roomID]) {
+    feedBackByRoomID[req.body.roomID] = [];
+  }
+  feedBackByRoomID[req.body.roomID].push(req.body.feedback)
+  return res.send({ success: true });
+});
+
 function uploadFile(source, targetName, userID, res) {
   console.log("preparing to upload...");
   fs.readFile(source, (err, filedata) => {
@@ -115,7 +126,8 @@ function retrieveFile(filename, res) {
   });
 }
 
-const exportAll = (userListByRoomID, messages) => {
+const exportAll = (userListByRoomID, messages, feedbacks) => {
+  console.log("here");
   let interviewer = {};
   let interviewee = {};
   for (const key in userListByRoomID) {
@@ -134,7 +146,7 @@ const exportAll = (userListByRoomID, messages) => {
       pass: "JustF0rFun",
     },
     tls: {
-        ciphers:'SSLv3'
+      ciphers: 'SSLv3'
     }
   });
   const s3Url = `https://interview-easy.s3.amazonaws.com/uploads/${interviewee.uid}/Resume.pdf`;
@@ -152,16 +164,27 @@ const exportAll = (userListByRoomID, messages) => {
     `;
   });
 
+  let feedBackContent = "";
+
+  feedbacks?.forEach((feedBack) => {
+    feedBackContent += `${feedBack}
+    `;
+  });
+
   const chatAttachment = {
     filename: "chat.txt",
     content: messageContent,
   };
 
+  const feedBackAttachment = {
+    filename: "candidateFeedback.txt",
+    content: feedBackContent,
+  };
   var mail = {
     from: "intervieweazy@outlook.com",
     to: interviewer.email,
     subject: `Interview with ${interviewee.userName}`,
-    attachments: [resumeAttachment, chatAttachment],
+    attachments: [resumeAttachment, chatAttachment, feedBackAttachment],
     text: "Attached the details of the interview",
   };
 
@@ -196,7 +219,7 @@ io.on("connection", (socket) => {
     socket.on("disconnect-user", () => {
       socket.to(roomId).emit("user-disconnected", userInfo);
       socket.to(roomId).emit("on-screen-sharing", false);
-      exportAll(userListByRoomID[roomId], messagesByRoomID[roomId]);
+      exportAll(userListByRoomID[roomId], messagesByRoomID[roomId], feedBackByRoomID[roomId]);
       delete userListByRoomID[roomId][`${userInfo.userName}${userInfo.email}`];
       io.in(roomId).emit("list-of-users", userListByRoomID[roomId]);
     });

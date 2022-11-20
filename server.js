@@ -80,7 +80,7 @@ app.post("/updateFeedback", (req, res) => {
   if (!feedBackByRoomID[req.body.roomID]) {
     feedBackByRoomID[req.body.roomID] = [];
   }
-  feedBackByRoomID[req.body.roomID].push(req.body.feedback)
+  feedBackByRoomID[req.body.roomID].push(req.body.feedback);
   return res.send({ success: true });
 });
 
@@ -146,12 +146,11 @@ const exportAll = (userListByRoomID, messages, feedbacks) => {
       pass: "JustF0rFun",
     },
     tls: {
-      ciphers: 'SSLv3'
-    }
+      ciphers: "SSLv3",
+    },
   });
   const s3Url = `https://interview-easy.s3.amazonaws.com/uploads/${interviewee.uid}/Resume.pdf`;
   console.log(s3Url);
-  //path.join(__dirname, config.default.vault, interviewee.uid, "Resume")
   const resumeAttachment = {
     filename: "Resume.pdf",
     path: s3Url,
@@ -219,7 +218,11 @@ io.on("connection", (socket) => {
     socket.on("disconnect-user", () => {
       socket.to(roomId).emit("user-disconnected", userInfo);
       socket.to(roomId).emit("on-screen-sharing", false);
-      exportAll(userListByRoomID[roomId], messagesByRoomID[roomId], feedBackByRoomID[roomId]);
+      exportAll(
+        userListByRoomID[roomId],
+        messagesByRoomID[roomId],
+        feedBackByRoomID[roomId]
+      );
       delete userListByRoomID[roomId][`${userInfo.userName}${userInfo.email}`];
       io.in(roomId).emit("list-of-users", userListByRoomID[roomId]);
     });
